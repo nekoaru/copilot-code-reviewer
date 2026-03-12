@@ -31,6 +31,59 @@ A GitLab Merge Request reviewer agent built with `github-copilot-sdk`, FastAPI, 
 - `backend/`: Python FastAPI
 - `frontend/`: React + Vite
 
+## Architecture
+
+```mermaid
+flowchart LR
+	U[User] -->|Open UI / Configure webhook| FE[Frontend React + Vite]
+	FE -->|POST /api/projects/setup| BE[Backend FastAPI]
+	BE -->|Create or update MR webhook| GL[GitLab]
+
+	U -->|Comment /copilot-review on MR| GL
+	GL -->|Merge Request note webhook| BE
+	BE -->|Validate webhook + queue job| JOB[Review Service / Job Store]
+	JOB -->|Fetch MR metadata + changes| GL
+	JOB -->|Clone repo + build diff| REPO[Local repo snapshot]
+	JOB -->|Prompt + session| SDK[GitHub Copilot SDK]
+	SDK -->|Review result| JOB
+	JOB -->|Summary note + inline discussions| GL
+
+	JOB -->|Persist status + logs| STORE[Local JSON store + job logs]
+	FE -->|SSE /api/review-jobs/{job_id}/logs/stream| BE
+	BE -->|Live job logs| FE
+	U -->|View logs and results| FE
+```
+
+## Interaction Flow
+
+### 1. Setup Flow
+
+1. The user opens the web UI and enters a GitLab project URL.
+2. The frontend calls `/api/projects/setup` on FastAPI.
+3. The backend uses the GitLab API to create or update a Merge Request note webhook.
+4. The backend stores the project configuration locally, including the webhook secret, trigger keyword, and review language.
+
+### 2. Review Trigger Flow
+
+1. The user comments a trigger keyword such as `/copilot-review` on a GitLab Merge Request.
+2. GitLab sends a note webhook to `/api/webhooks/gitlab`.
+3. The backend validates the webhook token, checks that the event is an MR note, and verifies that the trigger keyword is present.
+4. If valid, the backend creates a review job and schedules it in the background.
+
+### 3. Copilot Review Flow
+
+1. The review service fetches Merge Request metadata and changed files from GitLab.
+2. The backend clones or updates a local repository snapshot and generates a unified diff.
+3. The backend starts a Copilot SDK session, sends the review prompt, and streams model events into the job log.
+4. The Copilot SDK returns a structured review result.
+5. The backend converts that result into a summary note plus inline discussions and posts them back to GitLab.
+
+### 4. User Feedback Flow
+
+1. The frontend reads review job status and historical logs from the backend.
+2. The frontend subscribes to the SSE log stream for live Copilot execution output.
+3. The user sees queued, running, completed, or failed status in the UI and can inspect the full Copilot log stream.
+
 ## Requirements
 
 - Use the repo-local Python environment: `./.venv`

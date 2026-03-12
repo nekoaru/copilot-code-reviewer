@@ -240,11 +240,12 @@ class CopilotReviewer:
             findings_md.append(f"- {labels['no_issues']}")
 
         follow_ups_md = "\n".join(f"- {item}" for item in review.suggested_follow_ups) or f"- {labels['none']}"
+        findings_text = "\n".join(findings_md)
         return (
             f"## {labels['overall_assessment_header']}\n"
             f"{review.overall_assessment}\n\n"
             f"## {labels['findings_header']}\n"
-            f"{'\n'.join(findings_md)}\n\n"
+            f"{findings_text}\n\n"
             f"## {labels['follow_ups_header']}\n"
             f"{follow_ups_md}"
         )
