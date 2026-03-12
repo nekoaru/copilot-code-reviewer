@@ -49,7 +49,7 @@ flowchart LR
 	JOB -->|Summary note + inline discussions| GL
 
 	JOB -->|Persist status + logs| STORE[Local JSON store + job logs]
-	FE -->|SSE /api/review-jobs/{job_id}/logs/stream| BE
+	FE -->|Subscribe to SSE job log stream| BE
 	BE -->|Live job logs| FE
 	U -->|View logs and results| FE
 ```

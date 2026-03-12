@@ -49,7 +49,7 @@ flowchart LR
 	JOB -->|回写总结评论与行级讨论| GL
 
 	JOB -->|持久化状态与日志| STORE[本地 JSON 存储 + 任务日志]
-	FE -->|SSE /api/review-jobs/{job_id}/logs/stream| BE
+	FE -->|订阅 SSE 任务日志流| BE
 	BE -->|实时日志流| FE
 	U -->|查看日志与审查结果| FE
 ```
